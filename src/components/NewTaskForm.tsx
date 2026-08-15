@@ -4,6 +4,7 @@ import { useTodoStore } from '../store'
 import type { Priority } from '../types'
 import { PRIORITY_LABEL } from '../types'
 import { AssigneePicker } from './AssigneePicker'
+import { canViewProject } from '../lib/permissions'
 
 const PRIORITY_DOT: Record<Priority, string> = {
   low: 'bg-slate-400',
@@ -15,6 +16,8 @@ export function NewTaskForm({ activeProjectId }: { activeProjectId: string }) {
   const projects = useTodoStore((s) => s.projects)
   const selectedProjectId = useTodoStore((s) => s.selectedProjectId)
   const addTask = useTodoStore((s) => s.addTask)
+  const users = useTodoStore((s) => s.users)
+  const currentUserId = useTodoStore((s) => s.currentUserId)
 
   const [title, setTitle] = useState('')
   const [deadline, setDeadline] = useState('')
@@ -23,6 +26,8 @@ export function NewTaskForm({ activeProjectId }: { activeProjectId: string }) {
   const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined)
 
   const showProjectPicker = selectedProjectId === null
+  const currentUser = users.find((u) => u.id === currentUserId)
+  const visibleProjects = projects.filter((p) => canViewProject(currentUser, p))
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -60,7 +65,7 @@ export function NewTaskForm({ activeProjectId }: { activeProjectId: string }) {
           onChange={(e) => setProjectId(e.target.value)}
           className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
         >
-          {projects.map((p) => (
+          {visibleProjects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
