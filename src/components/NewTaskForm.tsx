@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import { useTodoStore } from '../store'
 import type { Priority } from '../types'
 import { PRIORITY_LABEL } from '../types'
+import { AssigneePicker } from './AssigneePicker'
 
 const PRIORITY_DOT: Record<Priority, string> = {
   low: 'bg-slate-400',
@@ -19,6 +20,7 @@ export function NewTaskForm({ activeProjectId }: { activeProjectId: string }) {
   const [deadline, setDeadline] = useState('')
   const [priority, setPriority] = useState<Priority>('medium')
   const [projectId, setProjectId] = useState(activeProjectId)
+  const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined)
 
   const showProjectPicker = selectedProjectId === null
 
@@ -31,10 +33,12 @@ export function NewTaskForm({ activeProjectId }: { activeProjectId: string }) {
       projectId: showProjectPicker ? projectId : activeProjectId,
       deadline: deadline || undefined,
       priority,
+      assigneeId,
     })
     setTitle('')
     setDeadline('')
     setPriority('medium')
+    setAssigneeId(undefined)
   }
 
   return (
@@ -83,6 +87,8 @@ export function NewTaskForm({ activeProjectId }: { activeProjectId: string }) {
         ))}
       </select>
       <span className={`h-2 w-2 rounded-full ${PRIORITY_DOT[priority]}`} />
+
+      <AssigneePicker value={assigneeId} onChange={setAssigneeId} />
 
       <button
         type="submit"

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { ExternalLink, Trash2 } from 'lucide-react'
+import { ExternalLink, Trash2, UserPlus, Users } from 'lucide-react'
 import { useTodoStore } from '../store'
 import type { Priority, Project, Task } from '../types'
 import { PRIORITY_LABEL } from '../types'
 import { classifyDeadline, DEADLINE_LABEL, DEADLINE_STYLES, formatDeadline } from '../lib/deadline'
+import { AssigneePicker } from './AssigneePicker'
 
 const PRIORITY_DOT: Record<Priority, string> = {
   low: 'bg-slate-400',
@@ -16,13 +17,18 @@ export function TaskItem({ task, project }: { task: Task; project?: Project }) {
   const deleteTask = useTodoStore((s) => s.deleteTask)
   const updateTask = useTodoStore((s) => s.updateTask)
   const openTaskDetail = useTodoStore((s) => s.openTaskDetail)
+  const assignTask = useTodoStore((s) => s.assignTask)
+  const users = useTodoStore((s) => s.users)
+  const currentUserId = useTodoStore((s) => s.currentUserId)
 
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(task.title)
   const [deadline, setDeadline] = useState(task.deadline ?? '')
   const [priority, setPriority] = useState<Priority>(task.priority)
+  const [pickingAssignee, setPickingAssignee] = useState(false)
 
   const status = classifyDeadline(task.deadline)
+  const assignee = task.assigneeId ? users.find((u) => u.id === task.assigneeId) : undefined
 
   function save() {
     const trimmed = title.trim()
@@ -114,6 +120,52 @@ export function TaskItem({ task, project }: { task: Task; project?: Project }) {
           {DEADLINE_LABEL[status] ? `${DEADLINE_LABEL[status]} · ` : ''}
           {formatDeadline(task.deadline)}
         </span>
+      )}
+
+      {pickingAssignee ? (
+        <AssigneePicker
+          autoFocus
+          value={task.assigneeId ?? ''}
+          allowUnassigned={Boolean(assignee)}
+          onChange={(userId) => {
+            assignTask(task.id, userId ?? null)
+            setPickingAssignee(false)
+          }}
+          onBlur={() => setPickingAssignee(false)}
+        />
+      ) : assignee ? (
+        <button
+          onClick={() => setPickingAssignee(true)}
+          className="flex shrink-0 items-center gap-1 truncate text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+          title={`Asignado a ${assignee.name} · clic para cambiar`}
+        >
+          <span
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-medium text-white"
+            style={{ backgroundColor: assignee.color }}
+          >
+            {assignee.name.slice(0, 1).toUpperCase()}
+          </span>
+          <span className="hidden sm:inline">{assignee.name}</span>
+        </button>
+      ) : (
+        <>
+          <button
+            onClick={() => assignTask(task.id, currentUserId)}
+            className="hidden shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 group-hover:block dark:hover:bg-slate-800"
+            aria-label="Asignarme a mí"
+            title="Asignarme a mí"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => setPickingAssignee(true)}
+            className="hidden shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 group-hover:block dark:hover:bg-slate-800"
+            aria-label="Elegir persona asignada"
+            title="Asignar a otra persona"
+          >
+            <Users className="h-3.5 w-3.5" />
+          </button>
+        </>
       )}
 
       <button
