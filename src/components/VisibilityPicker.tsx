@@ -4,10 +4,13 @@ export function VisibilityPicker({
   value,
   onChange,
   users,
+  currentUserId,
 }: {
   value: ProjectVisibility
   onChange: (visibility: ProjectVisibility) => void
   users: User[]
+  /** Id of the user making this change — included by default when switching to a restricted allowlist, so they don't lock themselves out. */
+  currentUserId: string
 }) {
   const restricted = Array.isArray(value)
   const selectedIds = restricted ? value : []
@@ -37,7 +40,7 @@ export function VisibilityPicker({
         </button>
         <button
           type="button"
-          onClick={() => onChange(restricted ? value : [])}
+          onClick={() => onChange(restricted ? value : [currentUserId])}
           aria-pressed={restricted}
           className={`flex-1 rounded px-2 py-1 font-medium transition-colors ${
             restricted

@@ -121,7 +121,12 @@ export function Sidebar() {
               ))}
             </div>
             <IconPicker value={icon} onChange={setIcon} />
-            <VisibilityPicker value={visibility} onChange={setVisibility} users={users} />
+            <VisibilityPicker
+              value={visibility}
+              onChange={setVisibility}
+              users={users}
+              currentUserId={currentUserId}
+            />
             <button
               type="submit"
               className="w-full rounded bg-blue-600 py-1.5 text-sm font-medium text-white hover:bg-blue-700"

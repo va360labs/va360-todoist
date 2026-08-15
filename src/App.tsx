@@ -154,6 +154,7 @@ function App() {
                       value={activeProject.visibility}
                       onChange={(visibility) => setProjectVisibility(activeProject.id, visibility)}
                       users={users}
+                      currentUserId={currentUserId}
                     />
                   </div>
                 </div>
