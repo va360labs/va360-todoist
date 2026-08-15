@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { Attachment, Priority, Project, ProjectVisibility, Role, Task, User } from './types'
 import { PROJECT_COLORS } from './types'
 import { uid } from './lib/id'
+import { deleteAttachmentBlob } from './lib/attachmentStore'
 
 const INBOX_ID = 'inbox'
 const DEFAULT_ICON = 'Folder'
@@ -159,7 +160,16 @@ export const useTodoStore = create<TodoState>()(
         })),
 
       deleteTask: (id) =>
-        set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
+        set((s) => {
+          const task = s.tasks.find((t) => t.id === id)
+          // Fire-and-forget: reclaim the task's attachment blobs from IndexedDB.
+          // Not awaited — deleteTask is a synchronous store action and this
+          // cleanup shouldn't block the state update.
+          task?.attachments.forEach((a) => {
+            void deleteAttachmentBlob(a.id)
+          })
+          return { tasks: s.tasks.filter((t) => t.id !== id) }
+        }),
 
       updateTask: (id, patch) =>
         set((s) => ({
