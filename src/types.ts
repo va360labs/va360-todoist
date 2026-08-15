@@ -1,9 +1,45 @@
 export type Priority = 'low' | 'medium' | 'high'
 
+export type Role = 'admin' | 'member'
+
+export interface User {
+  id: string
+  name: string
+  color: string
+  role: Role
+  createdAt: number
+}
+
+/** 'everyone' = visible para todos; string[] = ids de usuario con acceso (además de los admins) */
+export type ProjectVisibility = 'everyone' | string[]
+
 export interface Project {
   id: string
   name: string
   color: string
+  icon: string
+  visibility: ProjectVisibility
+  createdAt: number
+}
+
+export interface Subtask {
+  id: string
+  title: string
+  done: boolean
+}
+
+export interface Comment {
+  id: string
+  authorId: string
+  body: string
+  createdAt: number
+}
+
+export interface Attachment {
+  id: string
+  name: string
+  mimeType: string
+  size: number
   createdAt: number
 }
 
@@ -15,6 +51,10 @@ export interface Task {
   done: boolean
   deadline?: string
   priority: Priority
+  assigneeId?: string
+  subtasks: Subtask[]
+  comments: Comment[]
+  attachments: Attachment[]
   createdAt: number
   completedAt?: number
 }

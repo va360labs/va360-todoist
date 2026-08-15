@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { ExternalLink, Trash2 } from 'lucide-react'
 import { useTodoStore } from '../store'
 import type { Priority, Project, Task } from '../types'
 import { PRIORITY_LABEL } from '../types'
@@ -15,6 +15,7 @@ export function TaskItem({ task, project }: { task: Task; project?: Project }) {
   const toggleTask = useTodoStore((s) => s.toggleTask)
   const deleteTask = useTodoStore((s) => s.deleteTask)
   const updateTask = useTodoStore((s) => s.updateTask)
+  const openTaskDetail = useTodoStore((s) => s.openTaskDetail)
 
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(task.title)
@@ -114,6 +115,14 @@ export function TaskItem({ task, project }: { task: Task; project?: Project }) {
           {formatDeadline(task.deadline)}
         </span>
       )}
+
+      <button
+        onClick={() => openTaskDetail(task.id)}
+        className="hidden shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 group-hover:block dark:hover:bg-slate-800"
+        aria-label="Abrir detalle de la tarea"
+      >
+        <ExternalLink className="h-3.5 w-3.5" />
+      </button>
 
       <button
         onClick={() => deleteTask(task.id)}
