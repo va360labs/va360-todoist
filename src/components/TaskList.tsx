@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useTodoStore } from '../store'
 import type { Task } from '../types'
 import { classifyDeadline, type DeadlineStatus } from '../lib/deadline'
+import { canViewProject } from '../lib/permissions'
 import { TaskItem } from './TaskItem'
 
 const GROUP_ORDER: DeadlineStatus[] = ['overdue', 'today', 'soon', 'later', 'none']
@@ -17,13 +18,25 @@ const GROUP_TITLE: Record<DeadlineStatus, string> = {
 export function TaskList({ projectId }: { projectId: string | null }) {
   const tasks = useTodoStore((s) => s.tasks)
   const projects = useTodoStore((s) => s.projects)
+  const users = useTodoStore((s) => s.users)
+  const currentUserId = useTodoStore((s) => s.currentUserId)
   const [showCompleted, setShowCompleted] = useState(false)
 
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects])
 
+  const currentUser = useMemo(
+    () => users.find((u) => u.id === currentUserId),
+    [users, currentUserId],
+  )
+
   const scoped = useMemo(
-    () => tasks.filter((t) => (projectId === null ? true : t.projectId === projectId)),
-    [tasks, projectId],
+    () =>
+      tasks.filter((t) => {
+        if (projectId !== null && t.projectId !== projectId) return false
+        const project = projectById.get(t.projectId)
+        return project ? canViewProject(currentUser, project) : false
+      }),
+    [tasks, projectId, projectById, currentUser],
   )
 
   const open = scoped.filter((t) => !t.done)

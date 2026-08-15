@@ -2,18 +2,42 @@ import { useMemo, useState } from 'react'
 import { ListTodo, Plus, Trash2, X } from 'lucide-react'
 import { useTodoStore, INBOX_ID } from '../store'
 import { PROJECT_COLORS } from '../types'
+import type { ProjectVisibility } from '../types'
+import { canViewProject } from '../lib/permissions'
+import { ProjectIconGlyph } from '../lib/icons'
+import { IconPicker } from './IconPicker'
+import { VisibilityPicker } from './VisibilityPicker'
 
 export function Sidebar() {
   const projects = useTodoStore((s) => s.projects)
   const tasks = useTodoStore((s) => s.tasks)
+  const users = useTodoStore((s) => s.users)
+  const currentUserId = useTodoStore((s) => s.currentUserId)
   const selectedProjectId = useTodoStore((s) => s.selectedProjectId)
   const selectProject = useTodoStore((s) => s.selectProject)
   const addProject = useTodoStore((s) => s.addProject)
   const deleteProject = useTodoStore((s) => s.deleteProject)
 
+  const currentUser = useMemo(
+    () => users.find((u) => u.id === currentUserId),
+    [users, currentUserId],
+  )
+
+  const visibleProjects = useMemo(
+    () => projects.filter((p) => canViewProject(currentUser, p)),
+    [projects, currentUser],
+  )
+
+  const visibleProjectIds = useMemo(
+    () => new Set(visibleProjects.map((p) => p.id)),
+    [visibleProjects],
+  )
+
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   const [color, setColor] = useState(PROJECT_COLORS[6])
+  const [icon, setIcon] = useState('Folder')
+  const [visibility, setVisibility] = useState<ProjectVisibility>('everyone')
 
   const openCount = useMemo(() => {
     const map = new Map<string, number>()
@@ -24,15 +48,17 @@ export function Sidebar() {
     return map
   }, [tasks])
 
-  const totalOpen = tasks.filter((t) => !t.done).length
+  const totalOpen = tasks.filter((t) => !t.done && visibleProjectIds.has(t.projectId)).length
 
   function submitProject(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    addProject(trimmed, color)
+    addProject(trimmed, color, icon, visibility)
     setName('')
     setColor(PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)])
+    setIcon('Folder')
+    setVisibility('everyone')
     setCreating(false)
   }
 
@@ -94,6 +120,13 @@ export function Sidebar() {
                 />
               ))}
             </div>
+            <IconPicker value={icon} onChange={setIcon} />
+            <VisibilityPicker
+              value={visibility}
+              onChange={setVisibility}
+              users={users}
+              currentUserId={currentUserId}
+            />
             <button
               type="submit"
               className="w-full rounded bg-blue-600 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
@@ -104,7 +137,7 @@ export function Sidebar() {
         )}
 
         <ul className="space-y-0.5">
-          {projects.map((p) => (
+          {visibleProjects.map((p) => (
             <li key={p.id} className="group flex items-center">
               <button
                 onClick={() => selectProject(p.id)}
@@ -115,9 +148,11 @@ export function Sidebar() {
                 }`}
               >
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: p.color }}
-                />
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: `${p.color}26` }}
+                >
+                  <ProjectIconGlyph icon={p.icon} className="h-3 w-3" style={{ color: p.color }} />
+                </span>
                 <span className="flex-1 truncate">{p.name}</span>
                 {(openCount.get(p.id) ?? 0) > 0 && (
                   <span className="text-xs text-slate-400">{openCount.get(p.id)}</span>
