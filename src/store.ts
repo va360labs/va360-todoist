@@ -4,6 +4,7 @@ import type { Attachment, Priority, Project, ProjectVisibility, Role, Task, User
 import { PROJECT_COLORS } from './types'
 import { uid } from './lib/id'
 import { deleteAttachmentBlob } from './lib/attachmentStore'
+import { isAdmin } from './lib/permissions'
 
 const INBOX_ID = 'inbox'
 const DEFAULT_ICON = 'Folder'
@@ -256,18 +257,38 @@ export const useTodoStore = create<TodoState>()(
       setCurrentUser: (id) => set({ currentUserId: id }),
 
       addUser: (name, color, role) =>
-        set((s) => ({
-          users: [...s.users, { id: uid(), name, color, role, createdAt: Date.now() }],
-        })),
+        set((s) => {
+          const actingUser = s.users.find((u) => u.id === s.currentUserId)
+          if (!isAdmin(actingUser)) return s
+          return {
+            users: [...s.users, { id: uid(), name, color, role, createdAt: Date.now() }],
+          }
+        }),
 
       updateUser: (id, patch) =>
-        set((s) => ({
-          users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
-        })),
+        set((s) => {
+          const actingUser = s.users.find((u) => u.id === s.currentUserId)
+          if (!isAdmin(actingUser)) return s
+          // Protect the last remaining admin from being demoted.
+          if (patch.role && patch.role !== 'admin') {
+            const target = s.users.find((u) => u.id === id)
+            const otherAdmins = s.users.some((u) => u.id !== id && u.role === 'admin')
+            if (target?.role === 'admin' && !otherAdmins) return s
+          }
+          return {
+            users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
+          }
+        }),
 
       removeUser: (id) =>
         set((s) => {
+          const actingUser = s.users.find((u) => u.id === s.currentUserId)
+          if (!isAdmin(actingUser)) return s
           if (s.users.length <= 1) return s
+          // Protect the last remaining admin from being removed.
+          const target = s.users.find((u) => u.id === id)
+          const otherAdmins = s.users.some((u) => u.id !== id && u.role === 'admin')
+          if (target?.role === 'admin' && !otherAdmins) return s
           const remainingUsers = s.users.filter((u) => u.id !== id)
           return {
             users: remainingUsers,
